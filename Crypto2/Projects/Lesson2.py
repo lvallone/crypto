@@ -62,7 +62,7 @@ def electronic_cookbook(plaintext, key, block_size, block_enc):
     return cipher
 
 
-def cipher_block_chaining(plaintext, key, init_vec, block_size, block_enc):
+def cipher_block_chaining(plaintext, key, init_vec, block_size, block_enc, decrypt=0):
     """Return the cbc encoding of `plaintext`
     
     Args:
@@ -94,8 +94,11 @@ def cipher_block_chaining(plaintext, key, init_vec, block_size, block_enc):
         # if i = 0, then first block - use IV - else use last cipher block
         if not i:
             cipher_block = block_enc(block, init_vec)
-        else:
+            prior_block = block
+        elif not decrypt:
             cipher_block = block_enc(block, cipher_block)
+        else:
+            cipher_block = block_enc(block, prior_block)
         if DEBUG: print "    encoded block: ", display_bits(cipher_block)
         
         # next encode w/ key
@@ -103,6 +106,7 @@ def cipher_block_chaining(plaintext, key, init_vec, block_size, block_enc):
         if DEBUG: print "    *encode block: ", display_bits(cipher_block)
         
         cipher.extend(cipher_block)
+        prior_block = block
     print "CBC:", bits_to_string(cipher)
     return cipher
 
@@ -127,7 +131,7 @@ def test():
     
     cipher = cipher_block_chaining(plaintext, key, iv, 128, xor_encoder)
     # assert bits_to_string(cipher) == 'C?\x17\x0f+=sb0O37/7|c\x03 @Ilkj3$%/hd9#$'
-    cipher = cipher_block_chaining(cipher, key, iv, 128, xor_encoder)
+    cipher = cipher_block_chaining(cipher, key, iv, 128, xor_encoder, 1)
     
     cipher = cipher_block_chaining(plaintext, key, iv, 128, aes_encoder)
     assert bits_to_string(cipher) == '\xeaJ\x13t\x00\x1f\xcb\xf8\xd2\x032b\xd0\xb6T\xb2\xb1\x81\xd5h\x97\xa0\xaeogtNi\xfa\x08\xca\x1e'
