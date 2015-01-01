@@ -1,6 +1,6 @@
 # Implement the cipher_block_chaining method below
 #
-DEBUG = 1
+DEBUG = 0
 
 from Crypto.Cipher import AES
 
@@ -77,6 +77,8 @@ def cipher_block_chaining(plaintext, key, init_vec, block_size, block_enc, decry
     # if `plaintext` is not a full block
     # break the plaintext into blocks
     # and encode each one
+    def xor(block, key):
+        return [b ^ k for b, k in zip(block, key)]
     
     cipher = []
     cipher_block = init_vec
@@ -94,7 +96,7 @@ def cipher_block_chaining(plaintext, key, init_vec, block_size, block_enc, decry
         
         # if i = 0, then first block - use IV - else use last cipher block
         if not decrypt:
-            cipher_block = block_enc(block, cipher_block)
+            cipher_block = xor(block, cipher_block)
             if DEBUG: print "    encoded block: ", display_bits(cipher_block)
                     # next encode w/ key
             cipher_block = block_enc(cipher_block, key)
@@ -102,13 +104,11 @@ def cipher_block_chaining(plaintext, key, init_vec, block_size, block_enc, decry
         else:
             cipher_block = block_enc(block, key)
             if DEBUG: print "    decoded block: ", display_bits(cipher_block)
-            cipher_block = block_enc(cipher_block, prior_block)
+            cipher_block = xor(cipher_block, prior_block)
             prior_block = block
             if DEBUG: print "    *decode block: ", display_bits(cipher_block)
         
         cipher.extend(cipher_block)
-    print "CBC:", bits_to_string(cipher)
-    print "  Encoded          ", display_bits(cipher)
     return cipher
 
     
@@ -126,20 +126,30 @@ def test():
     plaintext = string_to_bits("One if by land; two if by sea")
 
     cipher = cipher_block_chaining(plaintext, key, iv, 128, non_encoder)
+    print "CBC: non-encoder", bits_to_string(cipher)
+    print "  Encoded          ", display_bits(cipher)
     # assert bits_to_string(cipher) == 'wW/i\x05\rJQ]\x05\\\r\x05\x0e_G\x03 @Ilkj3$%/hd\x00\x00\x00'
     print "       assert bits:", display_bits(string_to_bits('wW/i\x05\rJQ]\x05\\\r\x05\x0e_G\x03 @Ilkj3$%/hd\x00\x00\x00'))
     print "=================================================="
     
     cipher = cipher_block_chaining(plaintext, key, iv, 128, xor_encoder)
+    print "CBC: Xor", bits_to_string(cipher)
+    print "  Encoded          ", display_bits(cipher)
     # assert bits_to_string(cipher) == 'C?\x17\x0f+=sb0O37/7|c\x03 @Ilkj3$%/hd9#$'
     print "       assert bits:", display_bits(string_to_bits('C?\x17\x0f+=sb0O37/7|c\x03 @Ilkj3$%/hd9#$'))
     cipher = cipher_block_chaining(cipher, key, iv, 128, xor_encoder, 1)
+    print "CBC Xor Decoder:", bits_to_string(cipher)
+    print "  Decoded          ", display_bits(cipher)
     print "=================================================="
     
     cipher = cipher_block_chaining(plaintext, key, iv, 128, aes_encoder)
+    print "CBC: AES", bits_to_string(cipher)
+    print "  Encoded          ", display_bits(cipher)
     # assert bits_to_string(cipher) == '\xeaJ\x13t\x00\x1f\xcb\xf8\xd2\x032b\xd0\xb6T\xb2\xb1\x81\xd5h\x97\xa0\xaeogtNi\xfa\x08\xca\x1e'
     print "       assert bits:", display_bits(string_to_bits('\xeaJ\x13t\x00\x1f\xcb\xf8\xd2\x032b\xd0\xb6T\xb2\xb1\x81\xd5h\x97\xa0\xaeogtNi\xfa\x08\xca\x1e'))
     cipher = cipher_block_chaining(cipher, key, iv, 128, aes_encoder, 1)
+    print "CBC: AES Decoded", bits_to_string(cipher)
+    print "  Decoded          ", display_bits(cipher)
     print "=================================================="
 ###################
 # Here are some utility functions
@@ -212,8 +222,8 @@ if __name__ == '__main__':
     
     block_size = len(key)
     cipher = electronic_cookbook(plaintext, key, block_size, xor_encoder)
-    print "cipher = ", display_bits(cipher)
-    print "  ", bits_to_string(cipher)
+    # print "cipher = ", display_bits(cipher)
+    # print "  ", bits_to_string(cipher)
     decrypt = electronic_cookbook(cipher, key, block_size, xor_encoder)
-    print "decrypt = ", display_bits(decrypt)
-    print "  ", bits_to_string(decrypt)
+    # print "decrypt = ", display_bits(decrypt)
+    # print "  ", bits_to_string(decrypt)
